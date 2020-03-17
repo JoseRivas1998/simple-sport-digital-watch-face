@@ -369,7 +369,7 @@ public class MyWatchFace extends CanvasWatchFaceService {
         }
 
         private void drawBackgroundLines(Canvas canvas) {
-            final float SPACING = 20;
+            final float SPACING = 15;
             for (float startY = 0; startY < mWatchHeight; startY += SPACING) {
                 canvas.drawLine(0, startY, mWatchWidth, startY + SPACING, backgroundPatternPaint);
             }
