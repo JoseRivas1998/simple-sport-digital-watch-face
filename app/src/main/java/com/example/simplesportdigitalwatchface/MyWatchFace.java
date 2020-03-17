@@ -12,6 +12,7 @@ import android.graphics.Color;
 import android.graphics.Paint;
 import android.graphics.Path;
 import android.graphics.Rect;
+import android.graphics.Typeface;
 import android.os.Bundle;
 import android.os.Handler;
 import android.os.Message;
@@ -21,7 +22,7 @@ import androidx.palette.graphics.Palette;
 import android.support.wearable.watchface.CanvasWatchFaceService;
 import android.support.wearable.watchface.WatchFaceService;
 import android.support.wearable.watchface.WatchFaceStyle;
-import android.util.Log;
+import android.text.TextPaint;
 import android.view.SurfaceHolder;
 import android.widget.Toast;
 
@@ -88,6 +89,9 @@ public class MyWatchFace extends CanvasWatchFaceService {
         private static final float CENTER_GAP_AND_CIRCLE_RADIUS = 4f;
 
         private static final int SHADOW_RADIUS = 6;
+        public static final float TOP_SHAPE_HEIGHT = 0.17f;
+        public static final float TOP_SHAPE_CENTER_PERCENT = 0.165f;
+        public static final float DATE_X_PERCENT = 0.325f;
         /* Handler to update the time once a second in interactive mode. */
         private final Handler mUpdateTimeHandler = new EngineHandler(this);
         private Calendar mCalendar;
@@ -127,6 +131,8 @@ public class MyWatchFace extends CanvasWatchFaceService {
 
         private Paint backgroundShapesPaint;
         private float[][] backgroundShapes;
+
+        private TextPaint textPaint;
 
         @Override
         public void onCreate(SurfaceHolder holder) {
@@ -177,38 +183,11 @@ public class MyWatchFace extends CanvasWatchFaceService {
         }
 
         private void initializeWatchFace() {
-            /* Set defaults for colors */
-            mWatchHandColor = Color.WHITE;
-            mWatchHandHighlightColor = Color.RED;
-            mWatchHandShadowColor = Color.BLACK;
 
-            mHourPaint = new Paint();
-            mHourPaint.setColor(mWatchHandColor);
-            mHourPaint.setStrokeWidth(HOUR_STROKE_WIDTH);
-            mHourPaint.setAntiAlias(true);
-            mHourPaint.setStrokeCap(Paint.Cap.ROUND);
-            mHourPaint.setShadowLayer(SHADOW_RADIUS, 0, 0, mWatchHandShadowColor);
+            textPaint = new TextPaint();
+            textPaint.setColor(getResources().getColor(R.color.text_color, getTheme()));
+            textPaint.setTypeface(Typeface.createFromAsset(getAssets(), "sevenseg.ttf"));
 
-            mMinutePaint = new Paint();
-            mMinutePaint.setColor(mWatchHandColor);
-            mMinutePaint.setStrokeWidth(MINUTE_STROKE_WIDTH);
-            mMinutePaint.setAntiAlias(true);
-            mMinutePaint.setStrokeCap(Paint.Cap.ROUND);
-            mMinutePaint.setShadowLayer(SHADOW_RADIUS, 0, 0, mWatchHandShadowColor);
-
-            mSecondPaint = new Paint();
-            mSecondPaint.setColor(mWatchHandHighlightColor);
-            mSecondPaint.setStrokeWidth(SECOND_TICK_STROKE_WIDTH);
-            mSecondPaint.setAntiAlias(true);
-            mSecondPaint.setStrokeCap(Paint.Cap.ROUND);
-            mSecondPaint.setShadowLayer(SHADOW_RADIUS, 0, 0, mWatchHandShadowColor);
-
-            mTickAndCirclePaint = new Paint();
-            mTickAndCirclePaint.setColor(mWatchHandColor);
-            mTickAndCirclePaint.setStrokeWidth(SECOND_TICK_STROKE_WIDTH);
-            mTickAndCirclePaint.setAntiAlias(true);
-            mTickAndCirclePaint.setStyle(Paint.Style.STROKE);
-            mTickAndCirclePaint.setShadowLayer(SHADOW_RADIUS, 0, 0, mWatchHandShadowColor);
         }
 
         @Override
@@ -242,37 +221,10 @@ public class MyWatchFace extends CanvasWatchFaceService {
         }
 
         private void updateWatchHandStyle() {
-            if (mAmbient) {
-                mHourPaint.setColor(Color.WHITE);
-                mMinutePaint.setColor(Color.WHITE);
-                mSecondPaint.setColor(Color.WHITE);
-                mTickAndCirclePaint.setColor(Color.WHITE);
-
-                mHourPaint.setAntiAlias(false);
-                mMinutePaint.setAntiAlias(false);
-                mSecondPaint.setAntiAlias(false);
-                mTickAndCirclePaint.setAntiAlias(false);
-
-                mHourPaint.clearShadowLayer();
-                mMinutePaint.clearShadowLayer();
-                mSecondPaint.clearShadowLayer();
-                mTickAndCirclePaint.clearShadowLayer();
-
+            if(mAmbient) {
+                textPaint.setColor(getResources().getColor(R.color.ambient_text_color, getTheme()));
             } else {
-                mHourPaint.setColor(mWatchHandColor);
-                mMinutePaint.setColor(mWatchHandColor);
-                mSecondPaint.setColor(mWatchHandHighlightColor);
-                mTickAndCirclePaint.setColor(mWatchHandColor);
-
-                mHourPaint.setAntiAlias(true);
-                mMinutePaint.setAntiAlias(true);
-                mSecondPaint.setAntiAlias(true);
-                mTickAndCirclePaint.setAntiAlias(true);
-
-                mHourPaint.setShadowLayer(SHADOW_RADIUS, 0, 0, mWatchHandShadowColor);
-                mMinutePaint.setShadowLayer(SHADOW_RADIUS, 0, 0, mWatchHandShadowColor);
-                mSecondPaint.setShadowLayer(SHADOW_RADIUS, 0, 0, mWatchHandShadowColor);
-                mTickAndCirclePaint.setShadowLayer(SHADOW_RADIUS, 0, 0, mWatchHandShadowColor);
+                textPaint.setColor(getResources().getColor(R.color.text_color, getTheme()));
             }
         }
 
@@ -409,8 +361,52 @@ public class MyWatchFace extends CanvasWatchFaceService {
         }
 
         private void drawWatchFace(Canvas canvas) {
+            drawDayOfWeek(canvas);
+        }
 
+        private void drawDayOfWeek(Canvas canvas) {
+            String dayOfWeek = getDayOfWeek(mCalendar);
+            textPaint.setTextSize(mWatchHeight * TOP_SHAPE_HEIGHT);
+            final float dayOfWeekHeight = getTextHeight(dayOfWeek, textPaint);
+            final float dayOfWeekY = (TOP_SHAPE_CENTER_PERCENT * mWatchHeight) + (dayOfWeekHeight * 0.5f);
+            final float dayOfWeekX = DATE_X_PERCENT * mWatchWidth;
+            canvas.drawText(dayOfWeek, dayOfWeekX, dayOfWeekY, textPaint);
+        }
 
+        private float getTextHeight(String text, TextPaint textPaint) {
+            final Rect rect = new Rect();
+            textPaint.getTextBounds(text, 0, text.length(), rect);
+            return rect.height();
+        }
+
+        private String getDayOfWeek(Calendar calendar) {
+            String weekDay;
+            switch (calendar.get(Calendar.DAY_OF_WEEK)) {
+                case Calendar.SUNDAY:
+                    weekDay = "SUN";
+                    break;
+                case Calendar.MONDAY:
+                    weekDay = "MON";
+                    break;
+                case Calendar.TUESDAY:
+                    weekDay = "TUE";
+                    break;
+                case Calendar.WEDNESDAY:
+                    weekDay = "WED";
+                    break;
+                case Calendar.THURSDAY:
+                    weekDay = "THU";
+                    break;
+                case Calendar.FRIDAY:
+                    weekDay = "FRI";
+                    break;
+                case Calendar.SATURDAY:
+                    weekDay = "SAT";
+                    break;
+                default:
+                    weekDay = "";
+            }
+            return weekDay;
         }
 
         @Override
