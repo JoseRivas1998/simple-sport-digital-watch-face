@@ -13,6 +13,7 @@ import android.graphics.Paint;
 import android.graphics.Path;
 import android.graphics.Rect;
 import android.graphics.Typeface;
+import android.graphics.drawable.Drawable;
 import android.os.Bundle;
 import android.os.Handler;
 import android.os.Message;
@@ -61,7 +62,7 @@ public class MyWatchFace extends CanvasWatchFaceService {
     private static class EngineHandler extends Handler {
         private final WeakReference<MyWatchFace.Engine> mWeakReference;
 
-        public EngineHandler(MyWatchFace.Engine reference) {
+        EngineHandler(MyWatchFace.Engine reference) {
             mWeakReference = new WeakReference<>(reference);
         }
 
@@ -69,31 +70,25 @@ public class MyWatchFace extends CanvasWatchFaceService {
         public void handleMessage(Message msg) {
             MyWatchFace.Engine engine = mWeakReference.get();
             if (engine != null) {
-                switch (msg.what) {
-                    case MSG_UPDATE_TIME:
-                        engine.handleUpdateTimeMessage();
-                        break;
+                if (msg.what == MSG_UPDATE_TIME) {
+                    engine.handleUpdateTimeMessage();
                 }
             }
         }
     }
 
     private class Engine extends CanvasWatchFaceService.Engine {
-        private static final float HOUR_STROKE_WIDTH = 5f;
-        private static final float MINUTE_STROKE_WIDTH = 3f;
-        private static final float SECOND_TICK_STROKE_WIDTH = 2f;
-
-        private static final float CENTER_GAP_AND_CIRCLE_RADIUS = 4f;
-
-        private static final int SHADOW_RADIUS = 6;
-        public static final float TOP_SHAPE_HEIGHT = 0.17f;
-        public static final float TOP_SHAPE_CENTER_PERCENT = 0.165f;
-        public static final float DAY_OF_WEEK_X_PERCENT = 0.325f;
-        public static final float CENTER_SHAPE_HEIGHT_PERCENT = 0.18f;
-        public static final float CENTER_SHAPE_CENTER_PERCENT = 0.37f;
-        public static final float DATE_TIME_X_PERCENT = 0.175f;
-        public static final float BOTTOM_SHAPE_HEIGHT_PERCENT = 0.16f;
-        public static final float BOTTOM_SHAPE_CENTER_PERCENT = 0.57f;
+        static final float TOP_SHAPE_HEIGHT = 0.17f;
+        static final float TOP_SHAPE_CENTER_PERCENT = 0.165f;
+        static final float DAY_OF_WEEK_X_PERCENT = 0.325f;
+        static final float CENTER_SHAPE_HEIGHT_PERCENT = 0.18f;
+        static final float CENTER_SHAPE_CENTER_PERCENT = 0.37f;
+        static final float DATE_TIME_X_PERCENT = 0.175f;
+        static final float BOTTOM_SHAPE_HEIGHT_PERCENT = 0.16f;
+        static final float BOTTOM_SHAPE_CENTER_PERCENT = 0.57f;
+        static final float ICON_SIZE = 0.2f;
+        static final float ICON_CENTER_X_PERCENT = 0.5f;
+        static final float ICON_CENTER_Y_PERCENT = 0.825f;
         /* Handler to update the time once a second in interactive mode. */
         private final Handler mUpdateTimeHandler = new EngineHandler(this);
         private Calendar mCalendar;
@@ -106,17 +101,6 @@ public class MyWatchFace extends CanvasWatchFaceService {
         };
         private boolean mRegisteredTimeZoneReceiver = false;
         private boolean mMuteMode;
-        /* Colors for all hands (hour, minute, seconds, ticks) based on photo loaded. */
-        private int mWatchHandColor;
-        private int mWatchHandHighlightColor;
-        private int mWatchHandShadowColor;
-        private Paint mHourPaint;
-        private Paint mMinutePaint;
-        private Paint mSecondPaint;
-        private Paint mTickAndCirclePaint;
-        private Paint mBackgroundPaint;
-        private Bitmap mBackgroundBitmap;
-        private Bitmap mGrayBackgroundBitmap;
         private boolean mAmbient;
         private boolean mLowBitAmbient;
         private boolean mBurnInProtection;
@@ -130,6 +114,8 @@ public class MyWatchFace extends CanvasWatchFaceService {
         private float[][] backgroundShapes;
 
         private TextPaint textPaint;
+
+        private Drawable icon;
 
         @Override
         public void onCreate(SurfaceHolder holder) {
@@ -149,8 +135,6 @@ public class MyWatchFace extends CanvasWatchFaceService {
             backgroundPatternPaint = new Paint();
             backgroundPatternPaint.setColor(getResources().getColor(R.color.background_lines, getTheme()));
 
-            mBackgroundBitmap = BitmapFactory.decodeResource(getResources(), R.drawable.bg);
-
             final int[] backgroundShapeIDs = {
                     R.array.day_of_week_shape,
                     R.array.time_shape,
@@ -161,9 +145,12 @@ public class MyWatchFace extends CanvasWatchFaceService {
             backgroundShapesPaint.setColor(getResources().getColor(R.color.background_shapes, getTheme()));
 
             backgroundShapes = new float[backgroundShapeIDs.length][];
-            for(int i = 0; i < backgroundShapeIDs.length; i++) {
+            for (int i = 0; i < backgroundShapeIDs.length; i++) {
                 backgroundShapes[i] = pointArrayToFloatArray(backgroundShapeIDs[i]);
             }
+
+            icon = getResources().getDrawable(R.drawable.tcgicon, getTheme());
+
         }
 
         private void initializeWatchFace() {
@@ -205,7 +192,7 @@ public class MyWatchFace extends CanvasWatchFaceService {
         }
 
         private void updateWatchHandStyle() {
-            if(mAmbient) {
+            if (mAmbient) {
                 textPaint.setColor(getResources().getColor(R.color.ambient_text_color, getTheme()));
             } else {
                 textPaint.setColor(getResources().getColor(R.color.text_color, getTheme()));
@@ -220,9 +207,6 @@ public class MyWatchFace extends CanvasWatchFaceService {
             /* Dim display in mute mode. */
             if (mMuteMode != inMuteMode) {
                 mMuteMode = inMuteMode;
-                mHourPaint.setAlpha(inMuteMode ? 100 : 255);
-                mMinutePaint.setAlpha(inMuteMode ? 100 : 255);
-                mSecondPaint.setAlpha(inMuteMode ? 80 : 255);
                 invalidate();
             }
         }
@@ -230,8 +214,6 @@ public class MyWatchFace extends CanvasWatchFaceService {
         @Override
         public void onSurfaceChanged(SurfaceHolder holder, int format, int width, int height) {
             super.onSurfaceChanged(holder, format, width, height);
-
-
             mWatchWidth = width;
             mWatchHeight = height;
         }
@@ -263,12 +245,18 @@ public class MyWatchFace extends CanvasWatchFaceService {
                 canvas.drawColor(getResources().getColor(R.color.background, getTheme()));
                 drawBackgroundLines(canvas);
                 drawBackgroundShapes(canvas);
+                final int ICON_LEFT = (int) ((ICON_CENTER_X_PERCENT - (ICON_SIZE * 0.5f)) * mWatchWidth);
+                final int ICON_TOP = (int) ((ICON_CENTER_Y_PERCENT - (ICON_SIZE * 0.5f)) * mWatchHeight);
+                final int ICON_RIGHT = ICON_LEFT + (int) (ICON_SIZE * mWatchWidth);
+                final int ICON_BOTTOM = ICON_TOP + (int) (ICON_SIZE * mWatchWidth);
+                icon.setBounds(ICON_LEFT, ICON_TOP, ICON_RIGHT, ICON_BOTTOM);
+                icon.draw(canvas);
             }
 
         }
 
         private void drawBackgroundLines(Canvas canvas) {
-            final float SPACING = 15;
+            final float SPACING = 5;
             for (float startY = 0; startY < mWatchHeight; startY += SPACING) {
                 canvas.drawLine(0, startY, mWatchWidth, startY + SPACING, backgroundPatternPaint);
             }
@@ -293,7 +281,7 @@ public class MyWatchFace extends CanvasWatchFaceService {
         private float[] pointArrayToFloatArray(final int arrayID) {
             TypedArray typedArray = getResources().obtainTypedArray(arrayID);
             float[] res = new float[typedArray.length()];
-            for(int i = 0; i < typedArray.length(); i++) {
+            for (int i = 0; i < typedArray.length(); i++) {
                 res[i] = typedArray.getFloat(i, 0);
             }
             typedArray.recycle();
@@ -329,7 +317,7 @@ public class MyWatchFace extends CanvasWatchFaceService {
             final int hour = mCalendar.get(Calendar.HOUR) == 0 ? 12 : mCalendar.get(Calendar.HOUR);
             final int minute = mCalendar.get(Calendar.MINUTE);
             final String timeString;
-            if(mAmbient) {
+            if (mAmbient) {
                 timeString = String.format("%d:%02d", hour, minute);
             } else {
                 final int second = mCalendar.get(Calendar.SECOND);
