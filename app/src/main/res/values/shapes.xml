@@ -1,0 +1,62 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <array name="day_of_week_shape">
+        <item>0.3</item>
+        <item>0.08</item>
+
+        <item>0.68</item>
+        <item>0.08</item>
+
+        <item>0.75</item>
+        <item>0.15</item>
+
+        <item>0.75</item>
+        <item>0.25</item>
+
+        <item>0.25</item>
+        <item>0.25</item>
+
+        <item>0.25</item>
+        <item>0.15</item>
+    </array>
+    <array name="time_shape">
+        <item>0.15</item>
+        <item>0.28</item>
+
+        <item>0.85</item>
+        <item>0.28</item>
+
+        <item>0.875</item>
+        <item>0.32</item>
+
+        <item>0.875</item>
+        <item>0.46</item>
+
+        <item>0.125</item>
+        <item>0.46</item>
+
+        <item>0.125</item>
+        <item>0.32</item>
+    </array>
+
+    <array name="date_shape">
+        <item>0.125</item>
+        <item>0.49</item>
+
+        <item>0.875</item>
+        <item>0.49</item>
+
+        <item>0.875</item>
+        <item>0.625</item>
+
+        <item>0.85</item>
+        <item>0.65</item>
+
+        <item>0.15</item>
+        <item>0.65</item>
+
+        <item>0.125</item>
+        <item>0.625</item>
+    </array>
+
+</resources>
