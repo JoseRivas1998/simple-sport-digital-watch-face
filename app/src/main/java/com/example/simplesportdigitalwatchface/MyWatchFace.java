@@ -302,7 +302,7 @@ public class MyWatchFace extends CanvasWatchFaceService {
         }
 
         private void drawDate(Canvas canvas) {
-            final int month = mCalendar.get(Calendar.MONTH);
+            final int month = mCalendar.get(Calendar.MONTH) + 1;
             final int day = mCalendar.get(Calendar.DAY_OF_MONTH);
             final int year = mCalendar.get(Calendar.YEAR);
             final String dateString = String.format("%d-%d-%d", month, day, year);
